@@ -18,14 +18,6 @@ on:
         description: VITE_API_URL para el build del frontend
         required: true
         default: /api
-      frontend_image_tag:
-        description: Tag para la imagen de frontend (vacío usa sha)
-        required: false
-        default: ""
-      backend_image_tag:
-        description: Tag para la imagen de backend (vacío usa sha)
-        required: false
-        default: ""
       update_ecs:
         description: "si/no: forzar despliegue en ECS desde Ansible"
         required: true
@@ -45,7 +37,6 @@ on:
 
 env:
   AWS_REGION: ${{ github.event.inputs.region || vars.AWS_REGION || 'us-east-1' }}
-  IMAGE_TAG: ${{ github.sha }}
 
 permissions:
   contents: read
@@ -78,15 +69,11 @@ jobs:
       - name: Ejecutar playbook ecr.yml
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
-          FRONT_TAG: ${{ github.event.inputs.frontend_image_tag != '' && github.event.inputs.frontend_image_tag || env.IMAGE_TAG }}
-          BACK_TAG: ${{ github.event.inputs.backend_image_tag != '' && github.event.inputs.backend_image_tag || env.IMAGE_TAG }}
         run: |
           ansible-playbook infra/ansible/ecr.yml --extra-vars "\
           region=${AWS_REGION} \
           project_name=${{ github.event.inputs.project_name }} \
           frontend_api_url=${{ github.event.inputs.frontend_api_url }} \
-          frontend_image_tag=${FRONT_TAG} \
-          backend_image_tag=${BACK_TAG} \
           update_ecs=${{ github.event.inputs.update_ecs }} \
           ecs_cluster_name=${{ github.event.inputs.ecs_cluster_name }} \
           ecs_service_frontend=${{ github.event.inputs.ecs_service_frontend }} \
