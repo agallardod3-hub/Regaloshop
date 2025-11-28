@@ -49,6 +49,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Escribir terraform.tfvars (secret opcional)
+        working-directory: infra/terraform
+        env:
+          TERRAFORM_TFVARS: ${{ secrets.TERRAFORM_TFVARS }}
+        run: |
+          if [ -n "$TERRAFORM_TFVARS" ]; then
+            # Usa el contenido multilinea del secret para generar el tfvars en el runner
+            printf "%s" "$TERRAFORM_TFVARS" > terraform.tfvars
+            echo "terraform.tfvars escrito desde secret TERRAFORM_TFVARS"
+          elif [ ! -f terraform.tfvars ]; then
+            echo "No se encontró terraform.tfvars y no se definió el secret TERRAFORM_TFVARS."
+            echo "Crea el archivo en el repo o añade el secret con su contenido."
+            exit 1
+          else
+            echo "Usando terraform.tfvars del repo"
+          fi
+
       - name: Validar confirmación de destroy
         if: github.event.inputs.action == 'destroy'
         run: |
