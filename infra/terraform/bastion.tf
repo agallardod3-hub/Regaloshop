@@ -1,6 +1,6 @@
-// ============================================================================
+
 // Bastion Host EC2 para ejecutar migraciones de BD
-// ============================================================================
+
 
 // EC2 Key Pair para Bastion (importar clave pública existente)
 resource "aws_key_pair" "bastion" {
