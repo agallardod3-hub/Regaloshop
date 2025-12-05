@@ -10,15 +10,9 @@
 
 const {
   esNumeroValido,
-  esNumeroEntero,
-  esNumeroNoNegativo,
   esNumeroPositivo,
-  esCadenaNoVacia,
   esEmailValido,
-  esObjetoValido,
   redondearADosDecimales,
-  multiplicarPrecioPorCantidad,
-  sumarDosValores,
   determinarCostoEnvio,
   compararStockConCantidad,
 } = require('../src/utils/validators');

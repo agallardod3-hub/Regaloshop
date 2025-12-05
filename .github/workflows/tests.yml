@@ -41,21 +41,8 @@ jobs:
         run: npm ci
 
       # -----------------------------------------------------------------------
-      # Paso 4: Ejecutar tests con cobertura
+      # Paso 4: Ejecutar tests con cobertura (muestra cada test con ✓)
       # -----------------------------------------------------------------------
       - name: 🧪 Ejecutar pruebas unitarias
         working-directory: backend
-        run: npm test -- --coverage --coverageReporters="text" --coverageReporters="text-summary"
-
-      # -----------------------------------------------------------------------
-      # Paso 5: Mostrar resumen de cobertura en el summary de GitHub
-      # -----------------------------------------------------------------------
-      - name: 📊 Publicar resumen de cobertura
-        working-directory: backend
-        if: always()
-        run: |
-          echo "## 📊 Reporte de Cobertura de Tests" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          npm test -- --coverage --coverageReporters="text-summary" 2>/dev/null | tail -20 >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        run: npm test -- --verbose --coverage

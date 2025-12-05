@@ -8,7 +8,7 @@
  */
 
 
-// FUNCIONES DE VALIDACIÓN (solo validan, retornan true/false o lanzan error)
+// FUNCIONES DE VALIDACIÓN (solo validan, retornan true/false)
 
 
 /**
@@ -21,39 +21,12 @@ function esNumeroValido(valor) {
 }
 
 /**
- * Valida que un valor sea un numero entero
- * @param {any} valor - El valor a validar
- * @returns {boolean} - true si es un numero entero
- */
-function esNumeroEntero(valor) {
-  return Number.isInteger(valor);
-}
-
-/**
- * Valida que un numero no sea negativo
- * @param {number} valor - El valor a validar
- * @returns {boolean} - true si el numero es cero o positivo
- */
-function esNumeroNoNegativo(valor) {
-  return valor >= 0;
-}
-
-/**
  * Valida que un numero sea mayor a cero
  * @param {number} valor - El valor a validar
  * @returns {boolean} - true si el numero es mayor a cero
  */
 function esNumeroPositivo(valor) {
   return valor > 0;
-}
-
-/**
- * Valida que un valor sea una cadena de texto no vacia
- * @param {any} valor - El valor a validar
- * @returns {boolean} - true si es string no vacio
- */
-function esCadenaNoVacia(valor) {
-  return typeof valor === 'string' && valor.trim().length > 0;
 }
 
 /**
@@ -64,15 +37,6 @@ function esCadenaNoVacia(valor) {
 function esEmailValido(email) {
   const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regexEmail.test(email);
-}
-
-/**
- * Valida que un objeto no sea nulo ni undefined
- * @param {any} valor - El valor a validar
- * @returns {boolean} - true si es un objeto valido
- */
-function esObjetoValido(valor) {
-  return valor !== null && typeof valor === 'object' && !Array.isArray(valor);
 }
 
 
@@ -86,26 +50,6 @@ function esObjetoValido(valor) {
  */
 function redondearADosDecimales(valor) {
   return Number(Number(valor).toFixed(2));
-}
-
-/**
- * Multiplica precio por cantidad
- * @param {number} precio - El precio unitario
- * @param {number} cantidad - La cantidad
- * @returns {number} - El resultado de la multiplicacion
- */
-function multiplicarPrecioPorCantidad(precio, cantidad) {
-  return precio * cantidad;
-}
-
-/**
- * Suma dos valores
- * @param {number} valorA - Primer valor
- * @param {number} valorB - Segundo valor
- * @returns {number} - La suma de ambos valores
- */
-function sumarDosValores(valorA, valorB) {
-  return valorA + valorB;
 }
 
 /**
@@ -130,18 +74,10 @@ function compararStockConCantidad(stockDisponible, cantidadSolicitada) {
 }
 
 module.exports = {
-  // Funciones de validacion
   esNumeroValido,
-  esNumeroEntero,
-  esNumeroNoNegativo,
   esNumeroPositivo,
-  esCadenaNoVacia,
   esEmailValido,
-  esObjetoValido,
-  // Funciones de calculo
   redondearADosDecimales,
-  multiplicarPrecioPorCantidad,
-  sumarDosValores,
   determinarCostoEnvio,
   compararStockConCantidad,
 };
