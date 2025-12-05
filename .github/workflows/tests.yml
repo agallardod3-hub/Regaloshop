@@ -45,4 +45,17 @@ jobs:
       # -----------------------------------------------------------------------
       - name: 🧪 Ejecutar pruebas unitarias
         working-directory: backend
-        run: npm test -- --verbose --coverage
+        run: npm test -- --verbose --coverage 2>&1 | tee test-output.txt
+
+      # -----------------------------------------------------------------------
+      # Paso 5: Publicar resultado en GitHub Summary
+      # -----------------------------------------------------------------------
+      - name: 📊 Publicar resumen en GitHub Summary
+        working-directory: backend
+        if: always()
+        run: |
+          echo "## 🧪 Resultado de Pruebas Unitarias" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat test-output.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
