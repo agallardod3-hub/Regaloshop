@@ -1,0 +1,77 @@
+name: Escaneo de Seguridad (Checkov)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/terraform/**'
+  pull_request:
+    paths:
+      - 'infra/terraform/**'
+
+permissions:
+  contents: read
+  security-events: write  # Para subir resultados a la pestaña Security de GitHub
+
+jobs:
+  checkov:
+    name: Checkov – Seguridad de Infraestructura
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Checkov
+        run: pip install checkov
+
+      - name: Ejecutar escaneo de Checkov
+        id: checkov
+        working-directory: infra/terraform
+        run: |
+          checkov -d . \
+            --framework terraform \
+            --config-file .checkov.yaml \
+            --output cli \
+            --output sarif \
+            --output-file-path . \
+            --soft-fail
+        continue-on-error: true
+
+      - name: Subir SARIF a GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: infra/terraform/results.sarif
+        continue-on-error: true
+
+      - name: Mostrar resumen de Checkov
+        working-directory: infra/terraform
+        run: |
+          echo "## 🔒 Resultados del Escaneo de Seguridad con Checkov" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          checkov -d . \
+            --framework terraform \
+            --config-file .checkov.yaml \
+            --compact \
+            2>&1 | grep -E "Passed|Failed|Skipped" >> $GITHUB_STEP_SUMMARY || true
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📋 Ver resultados detallados en la pestaña Security o en los logs del job." >> $GITHUB_STEP_SUMMARY
+
+      - name: Verificar fallos críticos
+        working-directory: infra/terraform
+        run: |
+          FAILED=$(checkov -d . --framework terraform --config-file .checkov.yaml --compact 2>&1 | grep -oP 'Failed checks: \K[0-9]+' || echo "0")
+          echo "Checks fallidos: $FAILED"
+          if [ "$FAILED" -gt 20 ]; then
+            echo "❌ Demasiados checks fallidos ($FAILED > 20). Por favor corrige los problemas de seguridad críticos."
+            exit 1
+          else
+            echo "✅ Escaneo de seguridad aprobado con $FAILED hallazgos aceptables."
+          fi
