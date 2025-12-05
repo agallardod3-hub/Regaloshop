@@ -1,0 +1,61 @@
+# =============================================================================
+# WORKFLOW: Pruebas Unitarias con Jest
+# Ejecuta los tests automaticamente en cada push o pull request
+# =============================================================================
+
+name: 🧪 Pruebas Unitarias
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Ejecutar Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Paso 1: Descargar el codigo del repositorio
+      # -----------------------------------------------------------------------
+      - name: 📥 Descargar codigo
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Paso 2: Configurar Node.js
+      # -----------------------------------------------------------------------
+      - name: 🟢 Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      # -----------------------------------------------------------------------
+      # Paso 3: Instalar dependencias
+      # -----------------------------------------------------------------------
+      - name: 📦 Instalar dependencias
+        working-directory: backend
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # Paso 4: Ejecutar tests con cobertura
+      # -----------------------------------------------------------------------
+      - name: 🧪 Ejecutar pruebas unitarias
+        working-directory: backend
+        run: npm test -- --coverage --coverageReporters="text" --coverageReporters="text-summary"
+
+      # -----------------------------------------------------------------------
+      # Paso 5: Mostrar resumen de cobertura en el summary de GitHub
+      # -----------------------------------------------------------------------
+      - name: 📊 Publicar resumen de cobertura
+        working-directory: backend
+        if: always()
+        run: |
+          echo "## 📊 Reporte de Cobertura de Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          npm test -- --coverage --coverageReporters="text-summary" 2>/dev/null | tail -20 >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
