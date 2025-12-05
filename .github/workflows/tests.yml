@@ -1,9 +1,9 @@
 # =============================================================================
-# WORKFLOW: Pruebas Unitarias con Jest
+# WORKFLOW: Pruebas Unitarias con Jest y Análisis SonarQube
 # Ejecuta los tests automaticamente en cada push o pull request
 # =============================================================================
 
-name: 🧪 Pruebas Unitarias
+name: 🧪 Pruebas Unitarias y SonarQube
 
 on:
   push:
@@ -13,8 +13,22 @@ on:
 
 jobs:
   tests:
-    name: Ejecutar Tests
+    name: Ejecutar Tests y Análisis
     runs-on: ubuntu-latest
+
+    services:
+      sonarqube:
+        image: sonarqube:lts-community
+        ports:
+          - 9000:9000
+        env:
+          SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/api/system/status || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 120s
 
     steps:
       # -----------------------------------------------------------------------
@@ -22,6 +36,8 @@ jobs:
       # -----------------------------------------------------------------------
       - name: 📥 Descargar codigo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # -----------------------------------------------------------------------
       # Paso 2: Configurar Node.js
@@ -41,11 +57,11 @@ jobs:
         run: npm ci
 
       # -----------------------------------------------------------------------
-      # Paso 4: Ejecutar tests con cobertura (muestra cada test con ✓)
+      # Paso 4: Ejecutar tests con cobertura
       # -----------------------------------------------------------------------
       - name: 🧪 Ejecutar pruebas unitarias
         working-directory: backend
-        run: npm test -- --verbose --coverage 2>&1 | tee test-output.txt
+        run: npm test -- --verbose --coverage --coverageReporters=lcov --coverageReporters=text 2>&1 | tee test-output.txt
 
       # -----------------------------------------------------------------------
       # Paso 5: Publicar resultado en GitHub Summary
@@ -59,3 +75,76 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           cat test-output.txt >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      # -----------------------------------------------------------------------
+      # Paso 6: Esperar que SonarQube este listo
+      # -----------------------------------------------------------------------
+      - name: ⏳ Esperar SonarQube
+        run: |
+          echo "Esperando que SonarQube inicie..."
+          for i in {1..30}; do
+            if curl -s http://localhost:9000/api/system/status | grep -q '"status":"UP"'; then
+              echo "SonarQube esta listo!"
+              break
+            fi
+            echo "Intento $i/30 - SonarQube aun no esta listo..."
+            sleep 10
+          done
+
+      # -----------------------------------------------------------------------
+      # Paso 7: Crear proyecto en SonarQube
+      # -----------------------------------------------------------------------
+      - name: � Configurar proyecto en SonarQube
+        run: |
+          # Cambiar contraseña por defecto (admin/admin -> admin/admin123)
+          curl -u admin:admin -X POST "http://localhost:9000/api/users/change_password?login=admin&previousPassword=admin&password=admin123" || true
+          
+          # Crear proyecto
+          curl -u admin:admin123 -X POST "http://localhost:9000/api/projects/create?name=Regaloshop&project=regaloshop"
+          
+          # Generar token
+          TOKEN=$(curl -u admin:admin123 -X POST "http://localhost:9000/api/user_tokens/generate?name=github-action" | jq -r '.token')
+          echo "SONAR_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      # -----------------------------------------------------------------------
+      # Paso 8: Instalar SonarScanner
+      # -----------------------------------------------------------------------
+      - name: 📥 Instalar SonarScanner
+        run: |
+          wget -q https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+          unzip -q sonar-scanner-cli-5.0.1.3006-linux.zip
+          echo "$PWD/sonar-scanner-5.0.1.3006-linux/bin" >> $GITHUB_PATH
+
+      # -----------------------------------------------------------------------
+      # Paso 9: Ejecutar análisis SonarQube
+      # -----------------------------------------------------------------------
+      - name: 🔍 Análisis SonarQube
+        run: |
+          sonar-scanner \
+            -Dsonar.projectKey=regaloshop \
+            -Dsonar.sources=backend/src \
+            -Dsonar.tests=backend/tests \
+            -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info \
+            -Dsonar.host.url=http://localhost:9000 \
+            -Dsonar.token=$SONAR_TOKEN
+
+      # -----------------------------------------------------------------------
+      # Paso 10: Obtener resultados de SonarQube
+      # -----------------------------------------------------------------------
+      - name: 📊 Obtener resultados SonarQube
+        if: always()
+        run: |
+          sleep 10
+          echo "## 🔍 Resultado Análisis SonarQube" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Obtener métricas
+          METRICS=$(curl -s -u admin:admin123 "http://localhost:9000/api/measures/component?component=regaloshop&metricKeys=bugs,vulnerabilities,code_smells,coverage,duplicated_lines_density")
+          
+          echo "| Métrica | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐛 Bugs | $(echo $METRICS | jq -r '.component.measures[] | select(.metric=="bugs") | .value // "0"') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔓 Vulnerabilidades | $(echo $METRICS | jq -r '.component.measures[] | select(.metric=="vulnerabilities") | .value // "0"') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 Code Smells | $(echo $METRICS | jq -r '.component.measures[] | select(.metric=="code_smells") | .value // "0"') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📊 Cobertura | $(echo $METRICS | jq -r '.component.measures[] | select(.metric=="coverage") | .value // "N/A"')% |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📋 Código Duplicado | $(echo $METRICS | jq -r '.component.measures[] | select(.metric=="duplicated_lines_density") | .value // "0"')% |" >> $GITHUB_STEP_SUMMARY
