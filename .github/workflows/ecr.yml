@@ -95,7 +95,7 @@ jobs:
   # JOB: Vaciar y eliminar repositorios ECR
   # =========================================================================
   ecr_delete:
-    name: 🗑️ Vaciar y eliminar ECR
+    name:  Vaciar y eliminar ECR
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment }}
     if: ${{ github.event.inputs.action == 'delete' }}
@@ -106,11 +106,11 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: 🗑️ Vaciar y eliminar repositorios ECR
+      - name:  Vaciar y eliminar repositorios ECR
         env:
           PROJECT_NAME: ${{ github.event.inputs.project_name }}
         run: |
-          echo "## 🗑️ Eliminación de repositorios ECR" >> $GITHUB_STEP_SUMMARY
+          echo "##  Eliminación de repositorios ECR" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           REPOS=("${PROJECT_NAME}-frontend" "${PROJECT_NAME}-backend")
@@ -123,26 +123,26 @@ jobs:
               
               # Contar imágenes antes de eliminar
               IMAGE_COUNT=$(aws ecr list-images --repository-name "$REPO" --region ${{ env.AWS_REGION }} --query 'imageIds | length(@)' --output text 2>/dev/null || echo "0")
-              echo "- 📦 Imágenes encontradas: $IMAGE_COUNT" >> $GITHUB_STEP_SUMMARY
+              echo "-  Imágenes encontradas: $IMAGE_COUNT" >> $GITHUB_STEP_SUMMARY
               
               # Eliminar todas las imágenes del repositorio
               if [ "$IMAGE_COUNT" -gt 0 ]; then
                 echo "Eliminando $IMAGE_COUNT imágenes de $REPO..."
                 IMAGES=$(aws ecr list-images --repository-name "$REPO" --region ${{ env.AWS_REGION }} --query 'imageIds[*]' --output json)
                 aws ecr batch-delete-image --repository-name "$REPO" --region ${{ env.AWS_REGION }} --image-ids "$IMAGES" || true
-                echo "- ✅ Imágenes eliminadas" >> $GITHUB_STEP_SUMMARY
+                echo "-  Imágenes eliminadas" >> $GITHUB_STEP_SUMMARY
               fi
               
               # Eliminar el repositorio
               echo "Eliminando repositorio $REPO..."
               aws ecr delete-repository --repository-name "$REPO" --region ${{ env.AWS_REGION }} --force
-              echo "- ✅ Repositorio **$REPO** eliminado" >> $GITHUB_STEP_SUMMARY
+              echo "-  Repositorio **$REPO** eliminado" >> $GITHUB_STEP_SUMMARY
               
             else
-              echo "- ⚠️ Repositorio **$REPO** no existe" >> $GITHUB_STEP_SUMMARY
+              echo "-  Repositorio **$REPO** no existe" >> $GITHUB_STEP_SUMMARY
             fi
             
             echo "" >> $GITHUB_STEP_SUMMARY
           done
           
-          echo "### ✅ Proceso completado" >> $GITHUB_STEP_SUMMARY
+          echo "###  Proceso completado" >> $GITHUB_STEP_SUMMARY
