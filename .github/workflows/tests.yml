@@ -1,9 +1,5 @@
-# =============================================================================
-# WORKFLOW: Pruebas Unitarias con Jest y Análisis SonarQube
-# Ejecuta los tests y analiza Backend y Frontend por separado
-# =============================================================================
 
-name: 🧪 Pruebas Unitarias y SonarQube
+name: Pruebas Unitarias y SonarQube
 
 on:
   push:

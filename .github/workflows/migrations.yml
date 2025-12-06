@@ -1,4 +1,4 @@
-name: 🗄️ Migraciones de Base de Datos (vía Bastion)
+name: Migraciones de Base de Datos (vía Bastion)
 
 on:
   workflow_dispatch:
